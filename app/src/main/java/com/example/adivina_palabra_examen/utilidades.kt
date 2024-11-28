@@ -3,12 +3,12 @@ package com.example.adivina_palabra_examen
 import kotlin.random.Random
 import kotlin.random.nextInt
 
-fun String.transformar(descolado:Boolean,funcion:(c:Char,pos:Int)->Any):String{
+fun String.transformar(descolado:Boolean,funcion:(c:Char,pos:Int)->Char):String{
 
     var micaracter_transformado:Char
     var cadena_resultado= mutableListOf<Char>()
     for(indice in 0..this.length-1){
-            micaracter_transformado= funcion(this[indice],indice) as Char
+            micaracter_transformado= funcion(this[indice],indice)
             cadena_resultado.add(micaracter_transformado)
     }
     var cadena_resultado_bis= mutableListOf<Char>()
@@ -37,5 +37,5 @@ fun String.transformar(descolado:Boolean,funcion:(c:Char,pos:Int)->Any):String{
 
     }
 
-    return cadena_resultado.toString()
+    return cadena_resultado.joinToString ("")
 }

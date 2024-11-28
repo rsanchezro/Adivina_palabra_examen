@@ -3,6 +3,7 @@ package com.example.adivina_palabra_examen
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.text.method.KeyListener
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -19,6 +20,7 @@ class MainActivity : AppCompatActivity() {
     var tiempo_inicial="3:00"
     var juego:JuegoPalabras= JuegoPalabras()
     var palabragenerada:String=""
+    var num_funcion_transf:Int=0
     lateinit var temporizador:CountDownTimer
 
     var lista_funciones=listOf(funcionlambda({c:Char,p:Int->
@@ -43,15 +45,6 @@ class MainActivity : AppCompatActivity() {
 
         ),
         funcionlambda({c:Char,p:Int->
-            if(p%2==0)
-                ({//La posicion es par
-                    c.lowercaseChar().code-'a'.code+1
-                })
-            else
-                c
-
-        },4,3),
-        funcionlambda({c:Char,p:Int->
             if(p%2!=0)
             {//Solo los impares se convierten
                 (c.lowercaseChar().code+1).toChar()
@@ -71,7 +64,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(mibinding.root)
 
 
-        comenzar_aplicacion()
+        comenzar_aplicacion(true)
 
         añadir_escuchadores()
 
@@ -102,11 +95,11 @@ class MainActivity : AppCompatActivity() {
 
             //Genero el valor numerico para obtener la funcion que
             //transforma la cadena de forma aleatoria
-            var num=Random.nextInt(0..lista_funciones.size-1)
+            num_funcion_transf=Random.nextInt(0..lista_funciones.size-1)
 
-            var func_lambda=lista_funciones.get(num)
+            var func_lambda=lista_funciones.get(num_funcion_transf)
             var descolocar:Boolean=false
-            if(num==1)
+            if(num_funcion_transf==1)
                 descolocar=true
 
 
@@ -114,13 +107,14 @@ class MainActivity : AppCompatActivity() {
             //Muestro la palabra
             mibinding.palabraModificadaText.text=cadena_transformada
             //Muestro la pista
-            mibinding.pistaTextview.text=juego.obtener_Pista(num)
+            mibinding.pistaTextview.text=juego.obtener_Pista(num_funcion_transf)
 
             //Temporizador
-            temporizador=object:CountDownTimer(18000,1000){
+            temporizador=object:CountDownTimer(180000,1000){
                 override fun onTick(p0: Long) {
-                    var minutos=p0/60
-                    var segundos=p0%60
+                    var s=p0/1000
+                    var minutos=s/60
+                    var segundos=s%60
                     var texto_segundos:String=segundos.toString()
                     if(segundos<10)
                     {
@@ -132,14 +126,16 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onFinish() {
-                   //Inicializamos el juego
-                    comenzar_aplicacion()
-                    //Poner imagen de perdido
-                    mibinding.resultadoImagen.setImageDrawable(ContextCompat.getDrawable(this@MainActivity,R.drawable.ic_launcher_background))
 
+                    //Poner imagen de perdido
+                    mibinding.resultadoImagen.setImageDrawable(ContextCompat.getDrawable(this@MainActivity,R.drawable.baseline_face_retouching_off_24))
+                    //Inicializamos el juego
+                    comenzar_aplicacion(false)
                 }
 
             }
+            //Arranco el reloj
+            temporizador.start()
 
 
 
@@ -155,7 +151,52 @@ class MainActivity : AppCompatActivity() {
             //Comprobar si el jugador va acertando las palabras o no
             //Incrementar y decrementar y controlar el fin del juego
 
-            if()
+            if(palabragenerada.equals(mibinding.palabraTextview.text))
+            { //Las palabras son iguales
+                //Sumar los puntos, que dependen de la funcion
+                //transformadora y de la longitud de la palabra generada
+                juego.puntos+=lista_funciones.get(num_funcion_transf).puntos_incremento+(palabragenerada.length/3)
+                //Actualizar los puntos en la pantalla
+                mibinding.puntosTextview.text=juego.puntos.toString()
+                //Comprobar si ha ganado
+                if(juego.puntos>50)
+                {
+
+                    //Salte mensaje ganador
+                    Toast.makeText(this,"HAS GANADO, ENHORABUENA!!",Toast.LENGTH_LONG).show()
+
+                    //Cambiar la imagen
+                    mibinding.resultadoImagen.setImageDrawable(ContextCompat.getDrawable(this,R.drawable.baseline_tag_faces_24))
+                    //Reinicie el juego
+                    comenzar_aplicacion(false)
+                    temporizador.cancel()
+                }
+                else
+                    if(juego.puntos<=0)
+                    {
+                        //Ha perdido
+                        //Salte mensaje ganador
+                        Toast.makeText(this,"HAS PERDIDO, LO SIENTO!!",Toast.LENGTH_LONG).show()
+
+                        //Cambiar la imagen
+                        mibinding.resultadoImagen.setImageDrawable(ContextCompat.getDrawable(this,R.drawable.baseline_face_retouching_off_24))
+                        //Reinicie el juego
+                        comenzar_aplicacion(false)
+                        temporizador.cancel()
+
+                    }
+
+                //generar una nueva palabra
+                palabragenerada=juego.obtener_Palabra()
+                //transformarla
+                num_funcion_transf=Random.nextInt(1..lista_funciones.size-1)
+                var descolocado:Boolean=false
+                if(num_funcion_transf==1)
+                    descolocado=true
+
+                mibinding.palabraModificadaText.text=palabragenerada.transformar(descolocado,lista_funciones.get(num_funcion_transf).f)
+
+            }
 
 
 
@@ -166,7 +207,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun comenzar_aplicacion() {
+    private fun comenzar_aplicacion(inicio:Boolean) {
 
         mibinding.palabraModificadaText.text=""
         mibinding.pistaTextview.text=""
@@ -179,8 +220,9 @@ class MainActivity : AppCompatActivity() {
         mibinding.comprobarBoton.isEnabled=false
         mibinding.relojTextview.text=tiempo_inicial
         mibinding.puntosTextview.text=juego.puntos.toString()
-        mibinding.resultadoImagen.setImageDrawable(null)
-        mibinding.jugarBoton.isEnabled=false
+        if(inicio)
+            mibinding.resultadoImagen.setImageDrawable(null)
+        mibinding.jugarBoton.isEnabled=true
 
 
     }

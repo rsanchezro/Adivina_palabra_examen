@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.example.adivina_palabra_examen"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.adivina_palabra_examen"
